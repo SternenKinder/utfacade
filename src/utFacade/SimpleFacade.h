@@ -79,17 +79,21 @@ public:
 	 * Loads and instantiates a dataflow network from an XML file
 	 *
 	 * @param sDfSrg filename of dataflow description
+   * @param bReplace if true, replaces the existing data flow network with the new one.
+   *   Otherwise, the new file is considered as an update.
 	 * @return true if successful
 	 */
-	bool loadDataflow( const char* sDfSrg ) throw();
+  bool loadDataflow( const char* sDfSrg, bool bReplace = true ) throw();
 	
 	/** 
 	 * Loads and instantiates a dataflow network from a string
 	 *
 	 * @param sDataflow string containing the actual XML dataflow
+   * @param bReplace if true, replaces the existing data flow network with the new one.
+   *   Otherwise, the new file is considered as an update.
 	 * @return true if successful
 	 */
-	bool loadDataflowString( const char* sDataflow ) throw();
+  bool loadDataflowString( const char* sDataflow, bool bReplace = true ) throw();
 	
 	/** removes all dataflow component instances */
 	void clearDataflow() throw();
@@ -127,6 +131,25 @@ public:
 	 * @return true if successful
 	 */
 	bool setPoseCallback( const char* sComponentName, SimplePoseReceiver* pCallback ) throw();
+
+	/**
+  * Sets a callback on an ApplicationPushSinkPoseList
+  *
+  * @param sComponentName edge name of the ApplicationPushSinkPoseList
+  * @param pCallback the interface to call when an event is received
+  * @return true if successful
+  */
+  bool setPoseListCallback(const char* sComponentName, SimplePoseListReceiver* pCallback) throw();
+
+  /**
+   * Sets a button callback on an ApplicationPushSink
+   *
+   * @param sComponentName edge name of the ApplicationPushSink
+   * @param pCallback the interface to call when an event is received
+   * @return true if successful
+   */
+  bool setButtonCallback( const char* sComponentName, SimpleButtonReceiver* pCallback ) throw();
+
 
 	/**
 	 * Sets a callback on an ApplicationPushSinkErrorPose

@@ -96,6 +96,40 @@ void convertPoseCallback( Ubitrack::Facade::SimplePoseReceiver* receiver, const 
 	receiver->receivePose( p );
 }
 
+void convertPoseListCallback(Ubitrack::Facade::SimplePoseListReceiver* receiver, const Ubitrack::Measurement::PoseList& measurement)
+{
+  using namespace Ubitrack;
+  Facade::SimplePoseList p;
+  const std::size_t count(measurement->size());
+  for (std::size_t i(0); i < count; i++)
+  {
+    Math::Pose measurementValue = (*measurement)[i];
+    Facade::SimplePose pose;
+    pose.tx = measurementValue.translation()(0);
+    pose.ty = measurementValue.translation()(1);
+    pose.tz = measurementValue.translation()(2);
+    pose.rx = measurementValue.rotation().x();
+    pose.ry = measurementValue.rotation().y();
+    pose.rz = measurementValue.rotation().z();
+    pose.rw = measurementValue.rotation().w();
+    
+    p.values.push_back(pose);
+  }
+
+  p.timestamp = measurement.time();
+  receiver->receivePoseList(p);
+}
+
+// this function converts Measurement::Button to SimpleButton in a callback
+void convertButtonCallback( Ubitrack::Facade::SimpleButtonReceiver* receiver, const Ubitrack::Measurement::Button& measurement )
+{
+	using namespace Ubitrack;
+	Facade::SimpleButton p;
+	p.event = (int)(measurement->m_value);
+	p.timestamp = measurement.time();
+	receiver->receiveButton( p );
+}
+
 // this function converts Measurement::Pose to SimplePose in a callback
 void convertErrorPoseCallback( Ubitrack::Facade::SimpleErrorPoseReceiver* receiver, const Ubitrack::Measurement::ErrorPose& measurement )
 {
@@ -444,11 +478,11 @@ unsigned long long int SimpleFacade::now()
 }
 
 
-bool SimpleFacade::loadDataflow( const char* sDfSrg ) throw()
+bool SimpleFacade::loadDataflow( const char* sDfSrg, bool bReplace ) throw()
 {
 	try
 	{
-		m_pPrivate->loadDataflow( sDfSrg );
+		m_pPrivate->loadDataflow( sDfSrg, bReplace );
 	}
 	catch ( const Ubitrack::Util::Exception& e )
 	{
@@ -461,12 +495,12 @@ bool SimpleFacade::loadDataflow( const char* sDfSrg ) throw()
 }
 
 
-bool SimpleFacade::loadDataflowString( const char* sDataflow ) throw()
+bool SimpleFacade::loadDataflowString( const char* sDataflow, bool bReplace ) throw()
 {
 	try
 	{
 		std::istringstream ss( sDataflow );
-		m_pPrivate->loadDataflow( ss );
+		m_pPrivate->loadDataflow( ss, bReplace );
 	}
 	catch ( const Ubitrack::Util::Exception& e )
 	{
@@ -575,6 +609,38 @@ bool SimpleFacade::setPoseCallback( const char* sCallbackName, SimplePoseReceive
 	catch ( const Ubitrack::Util::Exception& e )
 	{
 		LOG4CPP_ERROR( logger, "Caught exception in SimpleFacade::setPoseCallback( " << sCallbackName <<" ): " << e );
+		setError( e.what() );
+		return false;
+	}
+
+	return true;
+}
+
+bool SimpleFacade::setPoseListCallback(const char* sCallbackName, SimplePoseListReceiver* pCallback) throw()
+{
+  try
+  {
+    m_pPrivate->setCallback< Measurement::PoseList >(sCallbackName, boost::bind(&convertPoseListCallback, pCallback, _1));
+  }
+  catch (const Ubitrack::Util::Exception& e)
+  {
+    LOG4CPP_ERROR(logger, "Caught exception in SimpleFacade::setPoseListCallback( " << sCallbackName << " ): " << e);
+    setError(e.what());
+    return false;
+  }
+
+  return true;
+}
+
+bool SimpleFacade::setButtonCallback( const char* sCallbackName, SimpleButtonReceiver* pCallback ) throw()
+{
+	try
+	{
+		m_pPrivate->setCallback< Measurement::Button >( sCallbackName, boost::bind( &convertButtonCallback, pCallback, _1 ) );
+	}
+	catch ( const Ubitrack::Util::Exception& e )
+	{
+		LOG4CPP_ERROR( logger, "Caught exception in SimpleFacade::setButtonCallback( " << sCallbackName <<" ): " << e );
 		setError( e.what() );
 		return false;
 	}

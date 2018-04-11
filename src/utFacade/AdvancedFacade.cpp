@@ -51,9 +51,6 @@
 	#include <utUtil/CleanWindows.h>
 #endif
 
-#ifdef HAVE_OPENCV
-#include <utVision/OpenCLManager.h>
-#endif // HAVE_OPENCV
 
 // get a logger
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Facade.AdvancedFacade" ) );
@@ -62,23 +59,6 @@ static const char* g_defaultPort = "3000";
 unsigned int Ubitrack::Facade::AdvancedFacade::m_instanceCount = 0;
 
 namespace Ubitrack { namespace Facade {
-
-void initGPU() {
-#ifdef HAVE_OPENCV
-	LOG4CPP_INFO(logger, "Facade: initGPU called.");
-	// access OCL Manager and initialize if needed
-	Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
-	if ((oclManager.isActive()) && (!oclManager.isInitialized()))
-	{
-		if (oclManager.isEnabled()) {
-			oclManager.initializeOpenGL();
-		}
-		LOG4CPP_INFO(logger, "OCL Manager initialized: " << oclManager.isInitialized());
-	}
-#endif
-	return;
-}
-
 
 // XXX duplicated constructor for now until i've found a better solution (Ulrich Eck)
 AdvancedFacade::AdvancedFacade( bool drop_events, const std::string& sComponentPath )
@@ -97,14 +77,33 @@ AdvancedFacade::AdvancedFacade( bool drop_events, const std::string& sComponentP
 #ifdef _WIN32
 		try
 		{
-			// try "ubitrack"-directory relative to ubitrack.dll
-			HMODULE hModule = GetModuleHandle( "Ubitrack.dll" );
-			if ( !hModule )
-				UBITRACK_THROW( "No ubitrack.dll loaded" );
 			char modulePath[ 256 ];
+      std::string compPath;
+      std::string componentSubfolder;
+			// try "ubitrack"-directory relative to ubitrack.dll
+			HMODULE hModule = GetModuleHandle( "utCore130.dll" );
+      if (hModule)
+      {
+        componentSubfolder = "/ubitrack";
 			DWORD pathLen = GetModuleFileName( hModule, modulePath, 256 );
 			// just strip the ".dll" from the name
-			std::string compPath( modulePath, pathLen - 4 );
+        compPath = std::string(modulePath, pathLen - 13);
+      }      
+      else
+      {
+        hModule = GetModuleHandle("utCore130d.dll");
+        DWORD pathLen = GetModuleFileName(hModule, modulePath, 256);
+        // just strip the ".dll" from the name
+        compPath = std::string(modulePath, pathLen - 14);
+        componentSubfolder = "/ubitrack_d";
+      }
+
+      if (!hModule)
+      {
+        UBITRACK_THROW("No utCore DLL loaded");
+      }
+
+      compPath.append(componentSubfolder);
 			m_pComponentFactory.reset( new Dataflow::ComponentFactory( compPath ) );
 		}
 		catch( Util::Exception& e )
@@ -136,14 +135,33 @@ AdvancedFacade::AdvancedFacade( const std::string& sComponentPath )
 #ifdef _WIN32
 		try
 		{
-			// try "ubitrack"-directory relative to ubitrack.dll
-			HMODULE hModule = GetModuleHandle( "Ubitrack.dll" );
-			if ( !hModule )
-				UBITRACK_THROW( "No ubitrack.dll loaded" );
 			char modulePath[ 256 ];
+      std::string compPath;
+      std::string componentSubfolder;
+      // try "ubitrack"-directory relative to ubitrack.dll
+      HMODULE hModule = GetModuleHandle("utCore130.dll");
+      if (hModule)
+      {
+        componentSubfolder = "/ubitrack";
+        DWORD pathLen = GetModuleFileName(hModule, modulePath, 256);
+        // just strip the ".dll" from the name
+        compPath = std::string(modulePath, pathLen - 13);
+      }
+      else
+      {
+        hModule = GetModuleHandle("utCore130d.dll");
 			DWORD pathLen = GetModuleFileName( hModule, modulePath, 256 );
 			// just strip the ".dll" from the name
-			std::string compPath( modulePath, pathLen - 4 );
+        compPath = std::string(modulePath, pathLen - 14);
+        componentSubfolder = "/ubitrack_d";
+      }
+
+      if (!hModule)
+      {
+        UBITRACK_THROW("No utCore DLL loaded");
+      }
+
+      compPath.append(componentSubfolder);
 			m_pComponentFactory.reset( new Dataflow::ComponentFactory( compPath ) );
 		}
 		catch( Util::Exception& e )

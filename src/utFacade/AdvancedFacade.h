@@ -36,11 +36,14 @@
 #include <list>
 #include <boost/thread.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/asio.hpp>
 #include <utClientServer/ClientServerConnection.h>
 #include <utDataflow/DataflowNetwork.h>
 
 #include "../utComponents/ApplicationPushSink.h"
 #include "../utComponents/ApplicationPushSource.h"
+
+
 
 // lots of forward decls to avoid applications having to deal with these internals
 namespace Ubitrack { 
@@ -52,21 +55,15 @@ namespace Ubitrack {
 	}
 }
 
-namespace boost 
+/*namespace boost 
 {
 	namespace asio {
 		class io_service;
 	}
-}
+}*/
 
 
 namespace Ubitrack { namespace Facade {
-
-/**
- * initialize GPU (needs valid OpenGL Context activated
- */
-void UTFACADE_EXPORT initGPU();
-
 
 // forward decls
 class DataflowObserver;

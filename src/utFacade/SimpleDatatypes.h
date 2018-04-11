@@ -53,6 +53,18 @@ struct SimplePose
 };
 
 /**
+* A simplified version of the Measurement::PoseList type without boost.
+*/
+struct SimplePoseList
+{
+  /** poses as a vector */
+  std::vector<SimplePose> values;
+
+  /** timestamp in nanoseconds since unix epoch */
+  unsigned long long int timestamp;
+};
+
+/**
  * A simplified version of the Measurement::ErrorPose type without boost.
  */
 struct SimpleErrorPose
@@ -204,6 +216,20 @@ public:
 	/** virtual destructor */
 	virtual ~SimplePoseReceiver()
 	{}
+};
+
+/**
+* A simple callback interface to transport SimplePoses
+*/
+class SimplePoseListReceiver
+{
+public:
+  /** receives a SimplePose */
+  virtual void receivePoseList(const SimplePoseList& pose) throw() = 0;
+
+  /** virtual destructor */
+  virtual ~SimplePoseListReceiver()
+  {}
 };
 
 /**
